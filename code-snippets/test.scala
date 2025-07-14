@@ -192,3 +192,31 @@ class ExtractDateValueTest extends AnyFunSuite {
     assert(ex.getMessage == "Expected two comma-separated date values for range")
   }
 }
+
+
+class IsNumericTest extends AnyFunSuite {
+
+  val numericTypes = Seq("integer", "long", "double", "float", "short", "byte", "scaled_float", "half_float")
+
+  test("isNumeric returns true for all numeric types") {
+    numericTypes.foreach { t =>
+      val result = isNumeric("amount", Map("amount" -> t))
+      assert(result, s"Expected $t to be numeric")
+    }
+  }
+
+  test("isNumeric returns false for string type") {
+    val result = isNumeric("amount", Map("amount" -> "keyword"))
+    assert(!result)
+  }
+
+  test("isNumeric returns false for missing field") {
+    val result = isNumeric("amount", Map.empty)
+    assert(!result)
+  }
+
+  test("isNumeric returns false for unrelated field") {
+    val result = isNumeric("amount", Map("price" -> "integer"))
+    assert(!result)
+  }
+}
