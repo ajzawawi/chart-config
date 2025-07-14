@@ -23,29 +23,40 @@ val sample: Map[String, Any] = Map(
 )
 
 
-def flattenMappings(mapping: Map[String, Any], prefix: String = ""): Map[String, String] = {
-  mapping.toList.flatMap {
-    case (fieldName, fieldDef: Map[_, _]) =>
-      val defMap = fieldDef.asInstanceOf[Map[String, Any]]
-      val fullName = if (prefix.isEmpty) fieldName else s"$prefix.$fieldName"
+object MappingUtils {
 
-      defMap.get("type") match {
-        case Some("object") | Some("nested") =>
+  def flattenMappings(mapping: Map[String, Any], prefix: String = ""): Map[String, String] = {
+    mapping.toList.flatMap {
+      case (fieldName, fieldDef: Map[_, _]) =>
+        val defMap = fieldDef.asInstanceOf[Map[String, Any]]
+        val fullName = if (prefix.isEmpty) fieldName else s"$prefix.$fieldName"
+
+        val baseField: Option[(String, String)] =
+          defMap.get("type").collect {
+            case fieldType: String => fullName -> fieldType
+          }
+
+        val nestedFields: Map[String, String] =
           defMap.get("properties") match {
             case Some(nestedProps: Map[_, _]) =>
               flattenMappings(nestedProps.asInstanceOf[Map[String, Any]], fullName)
-            case _ =>
-              // edge case: object with no properties
-              Map.empty
+            case _ => Map.empty
           }
 
-        case Some(fieldType: String) =>
-          Map(fullName -> fieldType)
+        val multiFields: Map[String, String] =
+          defMap.get("fields") match {
+            case Some(fields: Map[_, _]) =>
+              fields.asInstanceOf[Map[String, Map[String, Any]]].collect {
+                case (subField, subDef) if subDef.contains("type") =>
+                  s"$fullName.$subField" -> subDef("type").toString
+              }
+            case _ => Map.empty
+          }
 
-        case _ =>
-          Map.empty
-      }
+        baseField.toMap ++ nestedFields ++ multiFields
 
-    case _ => Map.empty
-  }.toMap
+      case _ => Map.empty
+    }.toMap
+  }
+
 }
