@@ -141,3 +141,54 @@ class ExtractNumericValueTest extends AnyFunSuite {
     assert(ex.getMessage == "Missing value for field missing")
   }
 }
+
+
+import org.scalatest.funsuite.AnyFunSuite
+
+class ExtractDateValueTest extends AnyFunSuite {
+
+  it("extractDateValue with valid two dates") {
+    val result = extractDateValue("range", Some("2024-01-01,2024-12-31"))
+    assert(result == ("2024-01-01", "2024-12-31"))
+  }
+
+  it("extractDateValue trims whitespace around dates") {
+    val result = extractDateValue("range", Some(" 2024-01-01 ,  2024-12-31 "))
+    assert(result == ("2024-01-01", "2024-12-31"))
+  }
+
+  it("extractDateValue with more than two dates throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractDateValue("range", Some("2024-01-01,2024-12-31,2025-01-01"))
+    }
+    assert(ex.getMessage == "Expected two comma-separated date values for range")
+  }
+
+  it("extractDateValue with only one date throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractDateValue("range", Some("2024-01-01"))
+    }
+    assert(ex.getMessage == "Expected two comma-separated date values for range")
+  }
+
+  it("extractDateValue with empty string throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractDateValue("range", Some(""))
+    }
+    assert(ex.getMessage == "Expected two comma-separated date values for range")
+  }
+
+  it("extractDateValue with None throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractDateValue("range", None)
+    }
+    assert(ex.getMessage == "Missing value for field: range")
+  }
+
+  it("extractDateValue filters out extra empty values") {
+    val ex = intercept[IllegalArgumentException] {
+      extractDateValue("range", Some("2024-01-01,,"))
+    }
+    assert(ex.getMessage == "Expected two comma-separated date values for range")
+  }
+}
