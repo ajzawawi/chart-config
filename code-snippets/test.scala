@@ -64,3 +64,38 @@ class MappingUtilsSpec extends AnyFunSpec {
     }
   }
 }
+
+
+import org.scalatest.funsuite.AnyFunSuite
+
+class ExtractValueTest extends AnyFunSuite {
+
+  test("extractValue with comma-separated values and * replacement") {
+    val result = extractValue("tags", Some("one,two,th*ree"))
+    assert(result == Right(Seq("one", "two", "th,ree")))
+  }
+
+  test("extractValue with single non-empty value and * replacement") {
+    val result = extractValue("name", Some("fir*st"))
+    assert(result == Left("fir,st"))
+  }
+
+  test("extractValue trims spaces and filters empty entries") {
+    val result = extractValue("list", Some(" one , , *two , "))
+    assert(result == Right(Seq("one", ",two")))
+  }
+
+  test("extractValue with empty trimmed value throws exception") {
+    val thrown = intercept[IllegalArgumentException] {
+      extractValue("emptyField", Some("   "))
+    }
+    assert(thrown.getMessage == "Invalid value for field emptyField")
+  }
+
+  test("extractValue with None throws exception") {
+    val thrown = intercept[IllegalArgumentException] {
+      extractValue("missingField", None)
+    }
+    assert(thrown.getMessage == "Missing value for field: missingField")
+  }
+}
