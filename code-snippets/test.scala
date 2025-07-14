@@ -99,3 +99,45 @@ class ExtractValueTest extends AnyFunSuite {
     assert(thrown.getMessage == "Missing value for field: missingField")
   }
 }
+
+
+import org.scalatest.funsuite.AnyFunSuite
+
+class ExtractNumericValueTest extends AnyFunSuite {
+
+  it("extractNumericValue with valid integer string") {
+    val result = extractNumericValue("amount", Some("42"))
+    assert(result == 42.0)
+  }
+
+  it("extractNumericValue with valid decimal string") {
+    val result = extractNumericValue("price", Some("  3.1415 "))
+    assert(result == 3.1415)
+  }
+
+  it("extractNumericValue with negative number") {
+    val result = extractNumericValue("offset", Some("-12.34"))
+    assert(result == -12.34)
+  }
+
+  it("extractNumericValue with invalid number throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractNumericValue("badNumber", Some("abc"))
+    }
+    assert(ex.getMessage == "Expected a numeric value for field: badNumber")
+  }
+
+  it("extractNumericValue with empty string throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractNumericValue("blank", Some("  "))
+    }
+    assert(ex.getMessage == "Invalid value for field blank")
+  }
+
+  it("extractNumericValue with None throws exception") {
+    val ex = intercept[IllegalArgumentException] {
+      extractNumericValue("missing", None)
+    }
+    assert(ex.getMessage == "Missing value for field missing")
+  }
+}
