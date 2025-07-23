@@ -33,7 +33,6 @@ Break it down to:
 [ 48-bit Randomness/Tie-breaker ]
     Section can include:
         Random values to ensure randomness when multiple threads or processes generate events in parallel
-
         Or other metadata ( like a shard ID for example)
 
         Not strictly needed for single threaded producers but necessary in distributed environments
@@ -80,8 +79,8 @@ Try sorting by timestamp (it should be broken)
 | Publisher | Event | Timestamp (UTC)         | Why Ambiguous?        | Notes                           |
 | --------- | ----- | ----------------------- | --------------------- | ------------------------------- |
 | A         | 1     | 2025-07-22 10:00:00.100 | Unique ms.            | Correct placement.              |
-| A         | 2     | 2025-07-22 10:00:00.101 | Same ms as A3 and B1. | Order among A2, A3, B1 unknown. |
 | A         | 3     | 2025-07-22 10:00:00.101 | Same ms as A2 and B1. | Order among A2, A3, B1 unknown. |
+| A         | 2     | 2025-07-22 10:00:00.101 | Same ms as A3 and B1. | Order among A2, A3, B1 unknown. |
 | B         | 1     | 2025-07-22 10:00:00.101 | Same ms as A2 and A3. | Order among A2, A3, B1 unknown. |
 | B         | 2     | 2025-07-22 10:00:00.102 | Unique ms.            | Correct placement.              |
 | A         | 4     | 2025-07-22 10:00:00.103 | Unique ms.            | Correct placement.              |
