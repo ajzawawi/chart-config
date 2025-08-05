@@ -1,11 +1,13 @@
 
-| **PME ID** | **ISIN**     | **CUSIP** | **SEDOL** | **S3D\_ID** | **MLSEC\_NO** | **S3D\_NO\_MARKET** | **MARKET** | **MARKET CODE** | **MARKET ID** | **TRADE CURRENCY** |
-| ---------- | ------------ | --------- | --------- | ----------- | ------------- | ------------------- | ---------- | --------------- | ------------- | ------------------ |
-| PME12345   | US1234567890 | 123456789 | B0YBKL9   | S3D001      | ML001         | S3D001\_DE          | Germany    | DE              | MKT001        | EUR                |
-|            |              |           |           | S3D002      | ML002         | S3D002\_EU          | Euroclear  | EUCL            | MKT002        | EUR                |
-|            |              |           |           | S3D003      | ML003         | S3D003\_US          | USA        | US              | MKT003        | USD                |
-|            |              |           | B1ZKJL8   | S3D004      | ML004         | S3D004\_FR          | France     | FR              | MKT004        | EUR                |
-|            |              |           |           | S3D005      | ML005         | S3D005\_BE          | Belgium    | BE              | MKT005        | EUR                |
+| **PME ID** | **ISIN**     | **CUSIP** | **SEDOL** | **S3D\_ID** | **MLSEC\_NO** | **S3D\_NO\_MARKET** | **MARKET** | **MARKET CODE** | **MARKET ID** | **PME TRADING LINE ID** | **TRADE CURRENCY** |
+| ---------- | ------------ | --------- | --------- | ----------- | ------------- | ------------------- | ---------- | --------------- | ------------- | ----------------------- | ------------------ |
+| PME12345   | US1234567890 | 123456789 | B0YBKL9   | S3D001      | ML001         | S3D001\_DE          | Germany    | DE              | MKT001        | TL001                   | EUR                |
+|            |              |           |           |             |               |                     |            |                 | MKT001        | TL002                   | EUR                |
+|            |              |           |           | S3D002      | ML002         | S3D002\_EU          | Euroclear  | EUCL            | MKT002        | TL003                   | EUR                |
+|            |              |           |           | S3D003      | ML003         | S3D003\_US          | USA        | US              | MKT003        | TL004                   | USD                |
+|            |              |           | B1ZKJL8   | S3D004      | ML004         | S3D004\_FR          | France     | FR              | MKT004        | TL005                   | EUR                |
+|            |              |           |           | S3D005      | ML005         | S3D005\_BE          | Belgium    | BE              | MKT005        | TL006                   | EUR                |
+|            |              |           |           |             |               |                     |            |                 | MKT005        | TL007                   | EUR                |
 
 
 # 1. Canonical Hash (keyed by PME ID)
@@ -20,19 +22,20 @@ HSET pme:PME12345 \
   s3d_ids "S3D001,S3D002,S3D003,S3D004,S3D005" \
   mlsec_nos "ML001,ML002,ML003,ML004,ML005" \
   s3d_market_map '{
-    "S3D001": { "mlsec": "ML001", "market": "Germany",   "code": "DE",    "id": "MKT001", "currency": "EUR" },
-    "S3D002": { "mlsec": "ML002", "market": "Euroclear", "code": "EUCL",  "id": "MKT002", "currency": "EUR" },
-    "S3D003": { "mlsec": "ML003", "market": "USA",       "code": "US",    "id": "MKT003", "currency": "USD" },
-    "S3D004": { "mlsec": "ML004", "market": "France",    "code": "FR",    "id": "MKT004", "currency": "EUR" },
-    "S3D005": { "mlsec": "ML005", "market": "Belgium",   "code": "BE",    "id": "MKT005", "currency": "EUR" }
+    "S3D001": { "mlsec": "ML001", "market": "Germany",   "code": "DE",    "id": "MKT001", "currency": "EUR", "trading_line_ids": ["TL001", "TL002"] },
+    "S3D002": { "mlsec": "ML002", "market": "Euroclear", "code": "EUCL",  "id": "MKT002", "currency": "EUR", "trading_line_ids": ["TL003"] },
+    "S3D003": { "mlsec": "ML003", "market": "USA",       "code": "US",    "id": "MKT003", "currency": "USD", "trading_line_ids": ["TL004"] },
+    "S3D004": { "mlsec": "ML004", "market": "France",    "code": "FR",    "id": "MKT004", "currency": "EUR", "trading_line_ids": ["TL005"] },
+    "S3D005": { "mlsec": "ML005", "market": "Belgium",   "code": "BE",    "id": "MKT005", "currency": "EUR", "trading_line_ids": ["TL006", "TL007"] }
   }' \
   mlsec_market_map '{
-    "ML001": { "s3d": "S3D001", "market": "Germany",   "code": "DE",    "id": "MKT001", "currency": "EUR" },
-    "ML002": { "s3d": "S3D002", "market": "Euroclear", "code": "EUCL",  "id": "MKT002", "currency": "EUR" },
-    "ML003": { "s3d": "S3D003", "market": "USA",       "code": "US",    "id": "MKT003", "currency": "USD" },
-    "ML004": { "s3d": "S3D004", "market": "France",    "code": "FR",    "id": "MKT004", "currency": "EUR" },
-    "ML005": { "s3d": "S3D005", "market": "Belgium",   "code": "BE",    "id": "MKT005", "currency": "EUR" }
+    "ML001": { "s3d": "S3D001", "market": "Germany",   "code": "DE",    "id": "MKT001", "currency": "EUR", "trading_line_ids": ["TL001", "TL002"] },
+    "ML002": { "s3d": "S3D002", "market": "Euroclear", "code": "EUCL",  "id": "MKT002", "currency": "EUR", "trading_line_ids": ["TL003"] },
+    "ML003": { "s3d": "S3D003", "market": "USA",       "code": "US",    "id": "MKT003", "currency": "USD", "trading_line_ids": ["TL004"] },
+    "ML004": { "s3d": "S3D004", "market": "France",    "code": "FR",    "id": "MKT004", "currency": "EUR", "trading_line_ids": ["TL005"] },
+    "ML005": { "s3d": "S3D005", "market": "Belgium",   "code": "BE",    "id": "MKT005", "currency": "EUR", "trading_line_ids": ["TL006", "TL007"] }
   }'
+
 ```
 #2 Reverse Pointers
 | **Pointer Key** | **Value**  | **Purpose**           |
@@ -87,48 +90,29 @@ HGETALL pme:PME12345
 # Example JSON
 
 ```json
-{
-  "pmeId": "PME12345",
+{{
   "isin": "US1234567890",
   "cusip": "123456789",
-  "sedol": "B0YBKL9,B1ZKJL8",
-  "s3d_ids": "S3D001,S3D002,S3D003,S3D004,S3D005",
-  "mlsec_nos": "ML001,ML002,ML003,ML004,ML005",
+  "sedol": ["B0YBKL9", "B1ZKJL8"],
+  "s3d_ids": ["S3D001", "S3D002", "S3D003", "S3D004", "S3D005"],
+  "mlsec_nos": ["ML001", "ML002", "ML003", "ML004", "ML005"],
   "s3d_market_map": {
     "S3D001": {
       "mlsec": "ML001",
       "market": "Germany",
       "code": "DE",
       "id": "MKT001",
-      "currency": "EUR"
+      "currency": "EUR",
+      "trading_line_ids": ["TL001", "TL002"]
     },
-    "S3D002": {
-      "mlsec": "ML002",
-      "market": "Euroclear",
-      "code": "EUCL",
-      "id": "MKT002",
-      "currency": "EUR"
-    },
-    "S3D003": {
-      "mlsec": "ML003",
-      "market": "USA",
-      "code": "US",
-      "id": "MKT003",
-      "currency": "USD"
-    },
-    "S3D004": {
-      "mlsec": "ML004",
-      "market": "France",
-      "code": "FR",
-      "id": "MKT004",
-      "currency": "EUR"
-    },
+    ...
     "S3D005": {
       "mlsec": "ML005",
       "market": "Belgium",
       "code": "BE",
       "id": "MKT005",
-      "currency": "EUR"
+      "currency": "EUR",
+      "trading_line_ids": ["TL006", "TL007"]
     }
   },
   "mlsec_market_map": {
@@ -137,37 +121,20 @@ HGETALL pme:PME12345
       "market": "Germany",
       "code": "DE",
       "id": "MKT001",
-      "currency": "EUR"
+      "currency": "EUR",
+      "trading_line_ids": ["TL001", "TL002"]
     },
-    "ML002": {
-      "s3d": "S3D002",
-      "market": "Euroclear",
-      "code": "EUCL",
-      "id": "MKT002",
-      "currency": "EUR"
-    },
-    "ML003": {
-      "s3d": "S3D003",
-      "market": "USA",
-      "code": "US",
-      "id": "MKT003",
-      "currency": "USD"
-    },
-    "ML004": {
-      "s3d": "S3D004",
-      "market": "France",
-      "code": "FR",
-      "id": "MKT004",
-      "currency": "EUR"
-    },
+    ...
     "ML005": {
       "s3d": "S3D005",
       "market": "Belgium",
       "code": "BE",
       "id": "MKT005",
-      "currency": "EUR"
+      "currency": "EUR",
+      "trading_line_ids": ["TL006", "TL007"]
     }
   }
 }
+
 
 ```
