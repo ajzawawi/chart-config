@@ -12,6 +12,39 @@
 
 # 1. Canonical Hash (keyed by PME ID)
 
+Assuming a hash structure:
+
+```
+HSET pme:PME12345:tl:TL001 \
+  pme_id "PME12345" \
+  mlsec_no "ML001" \
+  s3d_id "S3D001" \
+  market "Germany" \
+  trading_line_id "TL001" \
+  currency "EUR"
+```
+
+Assuming you have a reverse index for mlsec -> pme TL
+
+// a bunch of mlsecs from the feed
+// query to get keys for each mlsec (from the reverse index, O(1))
+// connector
+    val df = spark.read
+        .format("org.apache.spark.sql.redis")
+        .option("keys", keys)
+        .option("key.column", "pmeTL")
+        .load()
+
+That lookup is O(k) where k is the number of keys. 
+
+The connector loads a structure like the above as below:
+```
+| redisKey                 | pme\_id  | mlsec\_no | s3d\_id | market  | trading\_line\_id | currency |
+| ------------------------ | -------- | --------- | ------- | ------- | ----------------- | -------- |
+| pme\:PME12345\:tl\:TL001 | PME12345 | ML001     | S3D001  | Germany | TL001             | EUR      |
+```
+
+
 pme:PME12345 → HASH
 
 ```
