@@ -1,0 +1,111 @@
+/* Main Webflow-style featured widget */
+        .featured-widget {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 32px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 280px;
+        }
+
+        .featured-widget:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .featured-widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(40px, -40px);
+        }
+
+        .featured-widget::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            transform: translate(-20px, 20px);
+        }
+
+        .widget-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .widget-icon .material-icons {
+            font-size: 28px;
+            color: white;
+        }
+
+        .widget-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .widget-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: white;
+        }
+
+        .widget-description {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .widget-link {
+            display: inline-flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .widget-link:hover {
+            transform: translateX(4px);
+        }
+
+        .widget-link .material-icons {
+            margin-left: 4px;
+            font-size: 18px;
+        }
+
+
+        <div class="featured-widget">
+                <div class="widget-icon">
+                    <span class="material-icons">dashboard</span>
+                </div>
+                <div class="widget-content">
+                    <h3 class="widget-title">Platform Overview</h3>
+                    <p class="widget-description">Get a comprehensive view of your content management system with powerful tools and intuitive design workflows.</p>
+                    <a href="#" class="widget-link">
+                        Learn more
+                        <span class="material-icons">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
