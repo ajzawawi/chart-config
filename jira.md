@@ -1,6 +1,7 @@
 Feature: Pipeline Agent – file ingest, validation, upload, and archival
 
 Scenario: Startup creates folders and processes backlog
+
   Given a valid HOCON config with one or more Sources (inbox/output/archive/s3)
   When the agent starts
   Then it creates missing directories for each Source
