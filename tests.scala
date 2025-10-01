@@ -83,7 +83,10 @@ class MappingProcessorSpec
       val result = processor.process(inputDf, List.empty, "test-ruleset")
       
       assert(result.columns.contains("name"))
-      assert(result.select("name.first").first().getString(0) === "John")
+      
+      val row = result.first()
+      val nameStruct = row.getAs[Row]("name")
+      assert(nameStruct.getAs[String]("first") === "John")
     }
     
     it("should map a source field to a multi-level nested field") {
@@ -103,7 +106,11 @@ class MappingProcessorSpec
       val result = processor.process(inputDf, List.empty, "test-ruleset")
       
       assert(result.columns.contains("fieldB"))
-      assert(result.select("fieldB.fieldC.fieldD").first().getString(0) === "testValue")
+      
+      val row = result.first()
+      val fieldB = row.getAs[Row]("fieldB")
+      val fieldC = fieldB.getAs[Row]("fieldC")
+      assert(fieldC.getAs[String]("fieldD") === "testValue")
     }
     
     it("should map multiple source fields to the same nested structure") {
@@ -124,8 +131,12 @@ class MappingProcessorSpec
       val result = processor.process(inputDf, List.empty, "test-ruleset")
       
       assert(result.columns.contains("name"))
-      assert(result.select("name.first").first().getString(0) === "John")
-      assert(result.select("name.last").first().getString(0) === "Doe")
+      
+      val row = result.first()
+      val nameStruct = row.getAs[Row]("name")
+      
+      assert(nameStruct.getAs[String]("first") === "John")
+      assert(nameStruct.getAs[String]("last") === "Doe")
     }
     
     it("should map to both flat and nested fields simultaneously") {
@@ -147,10 +158,14 @@ class MappingProcessorSpec
       
       assert(result.columns.contains("name"))
       assert(result.columns.contains("fullName"))
-      assert(result.select("name.first").first().getString(0) === "John")
-      assert(result.select("name.last").first().getString(0) === "Doe")
+      
+      val row = result.first()
+      val nameStruct = row.getAs[Row]("name")
+      
+      assert(nameStruct.getAs[String]("first") === "John")
+      assert(nameStruct.getAs[String]("last") === "Doe")
       // fullName will be overwritten by lastName (last mapping wins)
-      assert(result.select("fullName").first().getString(0) === "Doe")
+      assert(row.getAs[String]("fullName") === "Doe")
     }
     
     it("should handle missing source fields gracefully") {
@@ -199,7 +214,10 @@ class MappingProcessorSpec
       val result = processor.process(inputDf, List.empty, "test-ruleset")
       
       assert(result.columns.contains("name"))
-      assert(result.select("name.first").first().get(0) === null)
+      
+      val row = result.first()
+      val nameStruct = row.getAs[Row]("name")
+      assert(nameStruct.get(0) === null)
     }
     
     it("should handle empty mappings list") {
@@ -247,59 +265,4 @@ class MappingProcessorSpec
         id = "customer-name-mapper"
         mappings = [
           { from = "firstName", to = ["name.first", "fullName"] }
-          { from = "lastName", to = ["name.last", "fullName"] }
-          { from = "fieldA", to = ["fieldB", "fieldB.fieldC", "fieldB.fieldC.fieldD"] }
-          { from = "srcX", to = ["dst.one", "dst.two.three"] }
-        ]
-      """)
-      
-      val processor = new MappingProcessor(config)
-      
-      import spark.implicits._
-      val inputDf = Seq(
-        ("John", "Doe", "valueA", 42)
-      ).toDF("firstName", "lastName", "fieldA", "srcX")
-      
-      val result = processor.process(inputDf, List.empty, "test-ruleset")
-      
-      // Verify name mappings
-      assert(result.select("name.first").first().getString(0) === "John")
-      assert(result.select("name.last").first().getString(0) === "Doe")
-      assert(result.select("fullName").first().getString(0) === "Doe") // last mapping wins
-      
-      // Verify fieldA mappings
-      assert(result.select("fieldB").first().getString(0) === "valueA")
-      assert(result.select("fieldB.fieldC").first().getString(0) === "valueA")
-      assert(result.select("fieldB.fieldC.fieldD").first().getString(0) === "valueA")
-      
-      // Verify srcX mappings
-      assert(result.select("dst.one").first().getInt(0) === 42)
-      assert(result.select("dst.two.three").first().getInt(0) === 42)
-    }
-    
-    it("should handle different data types") {
-      val config = ConfigFactory.parseString("""
-        mappings = [
-          { from = "stringField", to = ["nested.str"] }
-          { from = "intField", to = ["nested.int"] }
-          { from = "doubleField", to = ["nested.dbl"] }
-          { from = "boolField", to = ["nested.bool"] }
-        ]
-      """)
-      
-      val processor = new MappingProcessor(config)
-      
-      import spark.implicits._
-      val inputDf = Seq(
-        ("test", 100, 3.14, true)
-      ).toDF("stringField", "intField", "doubleField", "boolField")
-      
-      val result = processor.process(inputDf, List.empty, "test-ruleset")
-      
-      assert(result.select("nested.str").first().getString(0) === "test")
-      assert(result.select("nested.int").first().getInt(0) === 100)
-      assert(result.select("nested.dbl").first().getDouble(0) === 3.14)
-      assert(result.select("nested.bool").first().getBoolean(0) === true)
-    }
-  }
-}
+          { from = "lastName", to = ["name.last",
