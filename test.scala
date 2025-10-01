@@ -25,10 +25,9 @@ private def addNestedField(
     // Extract existing fields from the struct
     val existingFields = df.schema(topLevel).dataType match {
       case structType: org.apache.spark.sql.types.StructType =>
-        structType.fieldNames.map(fieldName => col(s"$topLevel.$fieldName").as(fieldName))
+        structType.fieldNames.toList.map(fieldName => col(s"$topLevel.$fieldName").as(fieldName))
       case _ =>
-        // If it's not a struct, we'll replace it
-        Seq.empty
+        List.empty[org.apache.spark.sql.Column]
     }
     
     // Add the new nested field
