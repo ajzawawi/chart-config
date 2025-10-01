@@ -265,4 +265,69 @@ class MappingProcessorSpec
         id = "customer-name-mapper"
         mappings = [
           { from = "firstName", to = ["name.first", "fullName"] }
-          { from = "lastName", to = ["name.last",
+          { from = "lastName", to = ["name.last", "fullName"] }
+          { from = "fieldA", to = ["fieldB", "fieldB.fieldC", "fieldB.fieldC.fieldD"] }
+          { from = "srcX", to = ["dst.one", "dst.two.three"] }
+        ]
+      """)
+      
+      val processor = new MappingProcessor(config)
+      
+      import spark.implicits._
+      val inputDf = Seq(
+        ("John", "Doe", "valueA", 42)
+      ).toDF("firstName", "lastName", "fieldA", "srcX")
+      
+      val result = processor.process(inputDf, List.empty, "test-ruleset")
+      
+      val row = result.first()
+      
+      // Verify name mappings
+      val nameStruct = row.getAs[Row]("name")
+      assert(nameStruct.getAs[String]("first") === "John")
+      assert(nameStruct.getAs[String]("last") === "Doe")
+      assert(row.getAs[String]("fullName") === "Doe") // last mapping wins
+      
+      // Verify fieldA mappings
+      assert(row.getAs[String]("fieldB") === "valueA")
+      val fieldBStruct = row.getAs[Row]("fieldB")
+      assert(fieldBStruct.getAs[String]("fieldC") === "valueA")
+      val fieldCStruct = fieldBStruct.getAs[Row]("fieldC")
+      assert(fieldCStruct.getAs[String]("fieldD") === "valueA")
+      
+      // Verify srcX mappings
+      val dstStruct = row.getAs[Row]("dst")
+      assert(dstStruct.getAs[Int]("one") === 42)
+      val twoStruct = dstStruct.getAs[Row]("two")
+      assert(twoStruct.getAs[Int]("three") === 42)
+    }
+    
+    it("should handle different data types") {
+      val config = ConfigFactory.parseString("""
+        mappings = [
+          { from = "stringField", to = ["nested.str"] }
+          { from = "intField", to = ["nested.int"] }
+          { from = "doubleField", to = ["nested.dbl"] }
+          { from = "boolField", to = ["nested.bool"] }
+        ]
+      """)
+      
+      val processor = new MappingProcessor(config)
+      
+      import spark.implicits._
+      val inputDf = Seq(
+        ("test", 100, 3.14, true)
+      ).toDF("stringField", "intField", "doubleField", "boolField")
+      
+      val result = processor.process(inputDf, List.empty, "test-ruleset")
+      
+      val row = result.first()
+      val nestedStruct = row.getAs[Row]("nested")
+      
+      assert(nestedStruct.getAs[String]("str") === "test")
+      assert(nestedStruct.getAs[Int]("int") === 100)
+      assert(nestedStruct.getAs[Double]("dbl") === 3.14)
+      assert(nestedStruct.getAs[Boolean]("bool") === true)
+    }
+  }
+}
