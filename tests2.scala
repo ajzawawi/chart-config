@@ -429,3 +429,205 @@ describe("MappingProcessor - Mixed Mappings") {
     assert(result.select("status").first().getString(0) === "ACTIVE")
   }
 }
+
+it("should apply coalesce transformation with multiple fallbacks") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "primaryEmail", transform = "coalesce:secondaryEmail:NOEMAIL", to = ["email"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  val inputSchema = StructType(Seq(
+    StructField("primaryEmail", StringType, nullable = true),
+    StructField("secondaryEmail", StringType, nullable = true)
+  ))
+  
+  val inputData = Seq(
+    Row("primary@example.com", "secondary@example.com"),  // Has primary
+    Row(null, "secondary@example.com"),                   // No primary, has secondary
+    Row(null, null)                                        // Neither, use default
+  )
+  
+  import scala.jdk.CollectionConverters._
+  val inputDf = spark.createDataFrame(inputData.asJava, inputSchema)
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  val emails = result.select("email").collect().map(_.getString(0))
+  assert(emails === Array("primary@example.com", "secondary@example.com", "NOEMAIL"))
+}
+
+it("should apply coalesce transformation with single fallback") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "preferredName", transform = "coalesce:Unknown", to = ["displayName"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  val inputSchema = StructType(Seq(
+    StructField("preferredName", StringType, nullable = true)
+  ))
+  
+  val inputData = Seq(
+    Row("John"),
+    Row(null)
+  )
+  
+  import scala.jdk.CollectionConverters._
+  val inputDf = spark.createDataFrame(inputData.asJava, inputSchema)
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  val names = result.select("displayName").collect().map(_.getString(0))
+  assert(names === Array("John", "Unknown"))
+}
+
+it("should apply coalesce transformation with three fallback fields") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "mobile", transform = "coalesce:home:work:NO_PHONE", to = ["phone"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  val inputSchema = StructType(Seq(
+    StructField("mobile", StringType, nullable = true),
+    StructField("home", StringType, nullable = true),
+    StructField("work", StringType, nullable = true)
+  ))
+  
+  val inputData = Seq(
+    Row("555-1111", "555-2222", "555-3333"),  // Has all three
+    Row(null, "555-2222", "555-3333"),        // No mobile, has home
+    Row(null, null, "555-3333"),              // No mobile/home, has work
+    Row(null, null, null)                     // None, use default
+  )
+  
+  import scala.jdk.CollectionConverters._
+  val inputDf = spark.createDataFrame(inputData.asJava, inputSchema)
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  val phones = result.select("phone").collect().map(_.getString(0))
+  assert(phones === Array("555-1111", "555-2222", "555-3333", "NO_PHONE"))
+}
+
+it("should apply dateFormat transformation to convert date to string") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "createdAt", transform = "dateFormat:yyyy-MM-dd", to = ["createdDate"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  import spark.implicits._
+  import java.sql.Timestamp
+  
+  val inputDf = Seq(
+    (Timestamp.valueOf("2025-10-03 14:30:45")),
+    (Timestamp.valueOf("2024-01-15 09:15:30"))
+  ).toDF("createdAt")
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  assert(result.select("createdDate").collect().map(_.getString(0)) === 
+    Array("2025-10-03", "2024-01-15"))
+}
+
+it("should apply dateFormat transformation with custom format pattern") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "orderDate", transform = "dateFormat:MM/dd/yyyy", to = ["formatted.date"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  import spark.implicits._
+  import java.sql.Date
+  
+  val inputDf = Seq(
+    (Date.valueOf("2025-10-03")),
+    (Date.valueOf("2024-12-25"))
+  ).toDF("orderDate")
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  val row = result.first()
+  val formattedStruct = row.getAs[Row]("formatted")
+  
+  assert(formattedStruct.getAs[String]("date") === "10/03/2025")
+}
+
+it("should apply dateFormat transformation with time included") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "timestamp", transform = "dateFormat:yyyy-MM-dd HH:mm:ss", to = ["fullTimestamp"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  import spark.implicits._
+  import java.sql.Timestamp
+  
+  val inputDf = Seq(
+    (Timestamp.valueOf("2025-10-03 14:30:45"))
+  ).toDF("timestamp")
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  assert(result.select("fullTimestamp").first().getString(0) === "2025-10-03 14:30:45")
+}
+
+it("should apply dateFormat transformation to extract only time") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "eventTime", transform = "dateFormat:HH:mm:ss", to = ["timeOnly"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  import spark.implicits._
+  import java.sql.Timestamp
+  
+  val inputDf = Seq(
+    (Timestamp.valueOf("2025-10-03 14:30:45")),
+    (Timestamp.valueOf("2025-10-03 09:15:20"))
+  ).toDF("eventTime")
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  assert(result.select("timeOnly").collect().map(_.getString(0)) === 
+    Array("14:30:45", "09:15:20"))
+}
+
+it("should apply dateFormat transformation with month name") {
+  val config = ConfigFactory.parseString("""
+    mappings = [
+      { from = "birthDate", transform = "dateFormat:MMMM dd, yyyy", to = ["formattedBirthDate"] }
+    ]
+  """)
+  
+  val processor = new MappingProcessor(config)
+  
+  import spark.implicits._
+  import java.sql.Date
+  
+  val inputDf = Seq(
+    (Date.valueOf("1990-03-15")),
+    (Date.valueOf("1985-12-25"))
+  ).toDF("birthDate")
+  
+  val result = processor.process(inputDf, List.empty, "test-ruleset")
+  
+  assert(result.select("formattedBirthDate").collect().map(_.getString(0)) === 
+    Array("March 15, 1990", "December 25, 1985"))
+}
