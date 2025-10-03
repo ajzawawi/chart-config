@@ -183,3 +183,68 @@ class MappingProcessor(config: Config) extends Processor {
 object MappingProcessor {
   def apply(config: Config): MappingProcessor = new MappingProcessor(config)
 }
+
+// OLD:
+def applyMappings(df: DataFrame, mappings: Seq[Mapping]): DataFrame = {
+  warnOnMixedMappings(mappings)
+
+  val (present, missing) = mappings.partition(m => df.columns.contains(m.from))
+  if (missing.nonEmpty) {
+    val missingList = missing.map(_.from).distinct.mkString(", ")
+    logger.warn(s"Skipping mappings; source columns not found: [${missingList}]")
+  }
+
+  present.foldLeft(df) { (currentDf, mapping) =>
+    mapping.to.foldLeft(currentDf) { (intermediateDf, targetPath) => 
+      setNested(intermediateDf, targetPath, col(mapping.from)) 
+    }
+  }
+}
+
+// NEW:
+def applyMappings(df: DataFrame, mappings: Seq[MappingRule]): DataFrame = {
+  warnOnMixedMappings(mappings)
+
+  // Separate mappings by type and validate
+  val (validMappings, invalidMappings) = mappings.map { mapping =>
+    (mapping, determineSourceColumn(df, mapping))
+  }.partition(_._2.isDefined)
+
+  // Warn about invalid mappings
+  if (invalidMappings.nonEmpty) {
+    val invalidList = invalidMappings.map { case (m, _) =>
+      m.from.getOrElse(m.value.getOrElse("unknown"))
+    }.distinct.mkString(", ")
+    logger.warn(s"Skipping invalid or missing source mappings: [${invalidList}]")
+  }
+
+  // Apply valid mappings
+  validMappings.foldLeft(df) { case (currentDf, (mapping, Some(sourceCol))) =>
+    mapping.to.foldLeft(currentDf) { (intermediateDf, targetPath) => 
+      setNested(intermediateDf, targetPath, sourceCol)
+    }
+  }
+}
+
+private def determineSourceColumn(
+  df: DataFrame, 
+  mapping: MappingRule
+): Option[org.apache.spark.sql.Column] = {
+  
+  (mapping.from, mapping.value, mapping.transform) match {
+    // Case 1: Direct field mapping
+    case (Some(field), None, None) if df.columns.contains(field) =>
+      Some(col(field))
+    
+    // Case 2: Static value
+    case (None, Some(value), None) =>
+      Some(castLiteralValue(value, mapping.`type`))
+    
+    // Case 3: Transformation
+    case (Some(field), None, Some(transform)) if df.columns.contains(field) =>
+      Some(applyTransformation(col(field), transform, df))
+    
+    // Invalid configuration
+    case _ => None
+  }
+}
